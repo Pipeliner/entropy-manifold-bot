@@ -1,10 +1,13 @@
 import 'dotenv/config'
 import fetch from 'node-fetch'
+import https from 'https'
 import { Bet, FullMarket, LiteMarket } from './types'
 
 const yourKey = process.env.MANIFOLD_API_KEY
 
 const API_URL = 'https://manifold.markets/api/v0'
+
+const agent = new https.Agent({ keepAlive: true });
 
 export const getFullMarket = async (id: string) => {
   const market: FullMarket = await fetch(`${API_URL}/market/${id}`).then(
@@ -17,13 +20,14 @@ const getMarkets = async (limit = 1000, before?: string) => {
   const markets: LiteMarket[] = await fetch(
     before
       ? `${API_URL}/markets?limit=${limit}&before=${before}`
-      : `${API_URL}/markets?limit=${limit}`
+      : `${API_URL}/markets?limit=${limit}`, { agent },
   ).then((res) => res.json())
 
   return markets
 }
 
 export const getAllMarkets = async () => {
+
   const allMarkets = []
   let before: string | undefined = undefined
 
@@ -64,15 +68,15 @@ export const getAllBets = async (username: string) => {
   const allBets: Bet[] = []
   let before: string | undefined = undefined
 
-  while (true) {
-    const bets: Bet[] = await getBets(username, 1000, before)
+  // while (true) {
+  //   const bets: Bet[] = await getBets(username, 1000, before)
 
-    allBets.push(...bets)
-    before = bets[bets.length - 1].id
-    console.log('Loaded', allBets.length, 'bets', 'before', before)
+  //   allBets.push(...bets)
+  //   before = bets[bets.length - 1].id
+  //   console.log('Loaded', allBets.length, 'bets', 'before', before)
 
-    if (bets.length < 1000) break
-  }
+  //   if (bets.length < 1000) break
+  // }
 
   return allBets
 }

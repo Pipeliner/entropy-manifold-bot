@@ -1,4 +1,4 @@
-import { sortBy, sumBy, uniq } from 'lodash'
+import { sortBy, sumBy, uniq, shuffle } from 'lodash'
 import {
   batchedWaitAll,
   cancelBet,
@@ -43,7 +43,7 @@ const betOnTopMarkets = async (excludeContractIds: string[]) => {
   const markets = await getAllMarkets()
   console.log('Loaded', markets.length)
 
-  const openBinaryMarkets = markets
+  const openBinaryMarkets = shuffle(markets)
     .filter((market) => market.outcomeType === 'BINARY')
     .filter(
       (market) =>
@@ -52,18 +52,19 @@ const betOnTopMarkets = async (excludeContractIds: string[]) => {
     .filter((market) => !excludeContractIds.includes(market.id))
 
   console.log('Open binary markets', openBinaryMarkets.length)
+  // shuffle(openBinaryMarkets)
 
   await batchedWaitAll(
     openBinaryMarkets.map((market) => async () => {
       const fullMarket = await getFullMarket(market.id)
-      const marketBets = fullMarket.bets.filter(
-        (bet) => bet.limitProb === undefined
-      )
-
-      if (marketBets.length >= 10) {
-        const bets = await placeLimitBets(fullMarket)
-        if (bets.length)
-          console.log('Placed orders for', fullMarket.question, ':', bets)
+      // console.log(fullMarket.probability)
+      if (fullMarket.probability < 0.3 /*&& fullMarket.bets && fullMarket.bets.length > 20*/) {
+        console.log(`Considering betting on ${fullMarket.url}`)
+        await placeBet({
+          contractId: fullMarket.id,
+          outcome: 'NO',
+          amount: 1,
+        })
       }
     }),
     10
